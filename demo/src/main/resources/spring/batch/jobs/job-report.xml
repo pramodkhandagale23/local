@@ -1,0 +1,230 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd">
+
+
+	<bean id="report" class="com.test.model.Report" scope="prototype" />
+	<!-- <batch:job id="reportJob"> <batch:step id="step1"> <batch:tasklet> 
+		<batch:chunk reader="cvsFileItemReader" writer="mysqlItemWriter" commit-interval="2"> 
+		</batch:chunk> </batch:tasklet> </batch:step> <batch:step id="master"> <batch:partition 
+		step="slave" partitioner="rangePartitioner"> <batch:handler grid-size="10" 
+		task-executor="taskExecutor" /> </batch:partition> </batch:step> </batch:job> -->
+
+
+	<!-- <batch:step id="slave" xmlns="http://www.springframework.org/schema/batch"> 
+		<batch:tasklet> <batch:chunk reader="pagingItemReader" writer="flatFileItemWriter" 
+		processor="itemProcessor" commit-interval="1" /> </batch:tasklet> </batch:step> -->
+
+
+
+	<!-- <bean id="cvsFileItemReader" class="org.springframework.batch.item.file.FlatFileItemReader"> 
+		Read a csv file <property name="resource" value="classpath:cvs/report.csv" 
+		/> <property name="lineMapper"> <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper"> 
+		split it <property name="lineTokenizer"> <bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer"> 
+		<property name="names" value="date,impressions,clicks,earning" /> </bean> 
+		</property> <property name="fieldSetMapper"> return back to reader, rather 
+		than a mapped object. <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" 
+		/> map to an object <bean class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper"> 
+		<property name="prototypeBeanName" value="report" /> </bean> </property> 
+		</bean> </property> </bean> <bean id="rangePartitioner" class="com.test.RangePartitioner" 
+		/> <bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor" 
+		/> inject stepExecutionContext <bean id="itemProcessor" class="com.test.UserProcessor" 
+		scope="step"> <property name="threadName" value="#{stepExecutionContext[name]}" 
+		/> </bean> <bean id="pagingItemReader" class="org.springframework.batch.item.file.FlatFileItemReader"> 
+		Read a csv file <property name="resource" value="classpath:cvs/report2.csv" 
+		/> <property name="lineMapper"> <bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper"> 
+		split it <property name="lineTokenizer"> <bean class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer"> 
+		<property name="names" value="date,impressions,clicks,earning" /> </bean> 
+		</property> <property name="fieldSetMapper"> return back to reader, rather 
+		than a mapped object. <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" 
+		/> map to an object <bean class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper"> 
+		<property name="prototypeBeanName" value="report" /> </bean> </property> 
+		</bean> </property> Inject via the ExecutionContext in rangePartitioner <property 
+		name="parameterValues"> <map> <entry key="fromId" value="#{stepExecutionContext[fromId]}" 
+		/> <entry key="toId" value="#{stepExecutionContext[toId]}" /> </map> </property> 
+		<property name="pageSize" value="10" /> </bean> <bean id="mysqlItemWriter" 
+		class="com.test.SimpleWriter"> <property name="dataSource" ref="dataSource" 
+		/> <property name="sql"> <value> <![CDATA[ insert into RAW_REPORT(DATE,IMPRESSIONS,CLICKS,EARNING) 
+		values (:date, :impressions, :clicks, :earning) ]]> </value> </property> 
+		It will take care matching between object property and sql name parameter 
+		<property name="itemSqlParameterSourceProvider"> <bean class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" 
+		/> </property> </bean> -->
+	<!-- csv file writer -->
+	<!-- <bean id="flatFileItemWriter" class="org.springframework.batch.item.file.FlatFileItemWriter" 
+		scope="step"> <property name="resource" value="file:csv/outputs/users.processed#{stepExecutionContext[fromId]}-#{stepExecutionContext[toId]}.csv" 
+		/> <property name="appendAllowed" value="false" /> <property name="lineAggregator"> 
+		<bean class="org.springframework.batch.item.file.transform.DelimitedLineAggregator"> 
+		<property name="delimiter" value="," /> <property name="fieldExtractor"> 
+		<bean class="org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor"> 
+		<property name="names" value="id, username, password, age" /> </bean> </property> 
+		</bean> </property> </bean> -->
+
+
+	<batch:job id="job">
+
+		<batch:step id="step_A" next="split_1">
+			<batch:tasklet ref="taskletStep_A" />
+		</batch:step>
+		
+		<batch:split id="split_1" task-executor="taskExecutor"
+			next="step_4">
+			<batch:flow>
+				<batch:step id="step_1">
+					<batch:tasklet>
+						<batch:chunk reader="step_1ItemReader" writer="step_1ItemWriter"
+							commit-interval="2">
+						</batch:chunk>
+					</batch:tasklet>
+				</batch:step>
+			</batch:flow>
+
+			<batch:flow>
+				<batch:step id="step_2">
+					<batch:tasklet>
+						<batch:chunk reader="step_2ItemReader" writer="step_2ItemWriter"
+							commit-interval="2">
+						</batch:chunk>
+					</batch:tasklet>
+				</batch:step>
+			</batch:flow>
+
+			<batch:flow>
+				<batch:step id="step_3">
+					<batch:tasklet>
+						<batch:chunk reader="step_3ItemReader" writer="step_3ItemWriter"
+							commit-interval="2">
+						</batch:chunk>
+					</batch:tasklet>
+				</batch:step>
+			</batch:flow>
+
+		</batch:split>
+		<batch:step id="step_4" next="step_5">
+			<batch:tasklet ref="taskletStep_4" />
+		</batch:step>
+
+		<batch:step id="step_5">
+			<batch:tasklet ref="taskletStep_5" />
+		</batch:step>
+
+	</batch:job>
+
+	<bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor" />
+
+	<bean id="step_1ItemReader" class="org.springframework.batch.item.file.FlatFileItemReader">
+
+		<!-- Read a csv file -->
+		<property name="resource" value="classpath:cvs/report.csv" />
+
+		<property name="lineMapper">
+			<bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+
+				<!-- split it -->
+				<property name="lineTokenizer">
+					<bean
+						class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+						<property name="names" value="date,impressions,clicks,earning" />
+					</bean>
+				</property>
+
+				<property name="fieldSetMapper">
+
+					<!-- return back to reader, rather than a mapped object. -->
+					<!-- <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" 
+						/> -->
+
+					<!-- map to an object -->
+					<bean
+						class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
+						<property name="prototypeBeanName" value="report" />
+					</bean>
+
+				</property>
+
+			</bean>
+		</property>
+
+	</bean>
+
+	<bean id="step_2ItemReader" class="org.springframework.batch.item.file.FlatFileItemReader">
+
+		<!-- Read a csv file -->
+		<property name="resource" value="classpath:cvs/report.csv" />
+
+		<property name="lineMapper">
+			<bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+
+				<!-- split it -->
+				<property name="lineTokenizer">
+					<bean
+						class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+						<property name="names" value="date,impressions,clicks,earning" />
+					</bean>
+				</property>
+
+				<property name="fieldSetMapper">
+
+					<!-- return back to reader, rather than a mapped object. -->
+					<!-- <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" 
+						/> -->
+
+					<!-- map to an object -->
+					<bean
+						class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
+						<property name="prototypeBeanName" value="report" />
+					</bean>
+
+				</property>
+
+			</bean>
+		</property>
+
+	</bean>
+
+	<bean id="step_3ItemReader" class="org.springframework.batch.item.file.FlatFileItemReader">
+
+		<!-- Read a csv file -->
+		<property name="resource" value="classpath:cvs/report.csv" />
+
+		<property name="lineMapper">
+			<bean class="org.springframework.batch.item.file.mapping.DefaultLineMapper">
+
+				<!-- split it -->
+				<property name="lineTokenizer">
+					<bean
+						class="org.springframework.batch.item.file.transform.DelimitedLineTokenizer">
+						<property name="names" value="date,impressions,clicks,earning" />
+					</bean>
+				</property>
+
+				<property name="fieldSetMapper">
+
+					<!-- return back to reader, rather than a mapped object. -->
+					<!-- <bean class="org.springframework.batch.item.file.mapping.PassThroughFieldSetMapper" 
+						/> -->
+
+					<!-- map to an object -->
+					<bean
+						class="org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper">
+						<property name="prototypeBeanName" value="report" />
+					</bean>
+
+				</property>
+
+			</bean>
+		</property>
+
+	</bean>
+
+	<bean id="step_1ItemWriter" class="com.test.SimpleWriter" />
+	<bean id="step_2ItemWriter" class="com.test.SimpleWriter" />
+	<bean id="step_3ItemWriter" class="com.test.SimpleWriter" />
+	<bean id="taskletStep_4" class="com.test.SimpleStep" />
+	<bean id="taskletStep_5" class="com.test.SimpleStep" />
+	<bean id="taskletStep_A" class="com.test.SimpleStep" />
+
+</beans>
